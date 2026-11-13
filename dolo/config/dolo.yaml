@@ -1,0 +1,27 @@
+# Dolo configuration. Install to /etc/dolo/dolo.yaml, or pass --config <file>.
+# Every key is optional; the values below are the defaults except where noted.
+
+server:
+  listen_host: 0.0.0.0
+  port: 5555            # protobuf stream for the Solo iPad app
+  debug_port: 5556      # read-only NDJSON copy of the stream (nc <pi> 5556); use null to disable
+
+adsb:                   # dump1090's SBS (BaseStation) output
+  host: 127.0.0.1
+  port: 30003
+  prune_after_s: 60     # drop aircraft not heard from for this long
+
+gnss:                   # gpsd; leave disabled until a GNSS HAT is fitted
+  enabled: false
+  host: 127.0.0.1
+  port: 2947
+
+traffic_hz: 1.0         # TrafficSnapshot rate
+
+# Receiver position, used for range/bearing while there is no GNSS fix.
+# Not set by default: copy your dump1090 LAT/LON here.
+ownship_fallback:
+  lat: 33.044835
+  lon: -96.988487
+
+log_level: info         # debug | info | warning | error

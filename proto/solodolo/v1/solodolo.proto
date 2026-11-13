@@ -1,0 +1,104 @@
+syntax = "proto3";
+
+package solodolo.v1;
+
+option swift_prefix = "SD";
+
+// Every frame on the wire is exactly one Envelope.
+message Envelope {
+  uint64 sent_unix_ms = 1;   // sender's clock when the frame was sent
+  oneof payload {
+    ClientHello     client_hello = 10;
+    ServerHello     server_hello = 11;
+    GnssFix         gnss         = 20;
+    TrafficSnapshot traffic      = 21;
+    Ping            ping         = 30;
+    Pong            pong         = 31;
+  }
+}
+
+// ---- Handshake -------------------------------------------------------------
+
+message ClientHello {
+  uint32 protocol_version = 1;   // currently 1
+  string app_version      = 2;   // e.g. "1.0 (42)"
+}
+
+message ServerHello {
+  uint32 protocol_version     = 1;
+  string bridge_version       = 2;
+  repeated Capability capabilities = 3;
+  bool   pps_locked           = 4;   // Pi clock disciplined by GPS PPS
+}
+
+enum Capability {
+  CAPABILITY_UNSPECIFIED = 0;
+  CAPABILITY_GNSS        = 1;
+  CAPABILITY_TRAFFIC     = 2;
+}
+
+// ---- Ownship GNSS ----------------------------------------------------------
+
+message GnssFix {
+  FixMode fix_mode   = 1;
+  uint64  fix_unix_ms = 2;          // GPS time of fix
+  double  latitude_deg  = 3;
+  double  longitude_deg = 4;
+  optional float altitude_msl_m = 5; // absent without a 3D fix
+  optional float ground_speed_kt = 6;
+  optional float track_true_deg  = 7;
+  optional float climb_fpm       = 8;
+  uint32  satellites_used    = 9;
+  uint32  satellites_visible = 10;
+  optional float hdop = 11;
+  optional float vdop = 12;
+  optional float horizontal_error_m = 13;  // gpsd eph
+}
+
+enum FixMode {
+  FIX_MODE_UNSPECIFIED = 0;
+  FIX_MODE_NO_FIX      = 1;
+  FIX_MODE_2D          = 2;
+  FIX_MODE_3D          = 3;
+}
+
+// ---- ADS-B traffic ---------------------------------------------------------
+
+// Full picture of the sky, sent at 1 Hz. Aircraft that drop out of a snapshot
+// are gone. That's simpler than sending add/update/remove deltas, and the size is fine on Ethernet.
+message TrafficSnapshot {
+  repeated Aircraft aircraft = 1;
+  uint64 messages_total = 2;   // dump1090 message counter (receiver health)
+}
+
+message Aircraft {
+  uint32 icao_address = 1;            // 24-bit ICAO, e.g. 0xA1B2C3
+  optional string callsign = 2;       // trimmed, e.g. "UAL123"
+  optional string squawk = 3;         // 4 octal digits as text, e.g. "1200"
+
+  // Position (absent until a CPR position decode succeeds)
+  optional double latitude_deg  = 4;
+  optional double longitude_deg = 5;
+
+  optional int32 altitude_baro_ft = 6;
+  optional int32 altitude_geom_ft = 7;
+  optional float ground_speed_kt  = 8;
+  optional float track_true_deg   = 9;
+  optional int32 vertical_rate_fpm = 10;
+  bool  on_ground = 11;
+
+  // Freshness / signal
+  float seen_s     = 12;   // seconds since any message
+  optional float seen_pos_s = 13;   // seconds since last position
+  optional float rssi_dbfs  = 14;
+
+  // Computed on the Pi relative to the current ownship fix
+  optional float range_nm         = 15;
+  optional float bearing_true_deg = 16;
+  optional int32 relative_alt_ft  = 17;
+}
+
+// ---- Keepalive -------------------------------------------------------------
+
+message Ping { uint32 seq = 1; }
+message Pong { uint32 seq = 1; }

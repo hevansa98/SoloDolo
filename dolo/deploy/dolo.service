@@ -1,0 +1,17 @@
+[Unit]
+Description=Dolo ADS-B/GNSS bridge for SoloDolo
+Wants=dump1090-mutability.service
+After=network.target dump1090-mutability.service
+
+[Service]
+ExecStart=/usr/local/bin/dolo --config /etc/dolo/dolo.yaml
+Restart=always
+RestartSec=2
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

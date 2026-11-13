@@ -254,9 +254,9 @@ Only the iPad app uses port 5555. Port 5556 is read-only and can be turned off i
 
 | Topic | Default proposal | Alternatives |
 |---|---|---|
-| Bridge language | Python (asyncio) | Go, Rust |
+| Bridge language | C++20 (epoll), see `dolo/` | Python, Go, Rust |
 | Wire encoding | Protobuf (proto3), 4-byte big-endian length prefix | Varint prefix (`writeDelimitedTo`); NDJSON |
-| Protobuf toolchain | `protoc` + swift-protobuf (SPM) on iOS; `protobuf` pip package on Pi | `buf` for linting and breaking-change checks |
+| Protobuf toolchain | `protoc` + swift-protobuf (SPM) on iOS; libprotobuf (C++) on Pi | `buf` for linting and breaking-change checks |
 | Traffic updates | Full snapshot @ 1 Hz | Per-aircraft deltas (only if the link gets slower) |
 | Debug visibility | JSON copy of the stream on :5556 | Debug-build-only switch on the iPad |
 | ADS-B source | SBS :30003 stream | Poll `aircraft.json` (simpler, already decoded) |

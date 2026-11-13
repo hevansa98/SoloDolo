@@ -1,0 +1,10 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<!-- Install to /etc/avahi/services/dolo.service -->
+<service-group>
+  <name replace-wildcards="yes">Dolo on %h</name>
+  <service>
+    <type>_solodolo._tcp</type>
+    <port>5555</port>
+  </service>
+</service-group>
