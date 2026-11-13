@@ -2,6 +2,11 @@
 //  ContentView.swift
 //  SoloDolo
 //
+//  Author: photon
+//
+//  Connect screen: host and port fields with inline validation and a Connect
+//  button. Opens the dashboard automatically once the bridge connects.
+//
 
 import SwiftUI
 import Network

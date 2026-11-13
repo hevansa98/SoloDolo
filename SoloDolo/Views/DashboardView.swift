@@ -2,6 +2,11 @@
 //  DashboardView.swift
 //  SoloDolo
 //
+//  Author: photon
+//
+//  Main dashboard, shown once connected. The connection indicator in the
+//  top-left returns to the connect screen when tapped.
+//
 
 import SwiftUI
 

@@ -2,6 +2,11 @@
 //  ConnectionIndicator.swift
 //  SoloDolo
 //
+//  Author: photon
+//
+//  Status "gumball": a label and a dot colored by connection status. Also
+//  defines the colors and messages shown for each ConnectionStatus.
+//
 
 import SwiftUI
 

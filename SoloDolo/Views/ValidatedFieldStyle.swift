@@ -2,6 +2,11 @@
 //  ValidatedFieldStyle.swift
 //  SoloDolo
 //
+//  Author: photon
+//
+//  Shared text field styling: rounded border and background that turn red
+//  when the field's value is invalid.
+//
 
 import SwiftUI
 

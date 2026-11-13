@@ -2,6 +2,11 @@
 //  BridgeConnection.swift
 //  SoloDolo
 //
+//  Author: photon
+//
+//  Owns the TCP connection to the SoloDolo bridge on the Raspberry Pi and
+//  publishes its status (idle, connecting, waiting, connected, failed).
+//
 
 import Foundation
 import Network

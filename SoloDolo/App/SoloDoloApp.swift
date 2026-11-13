@@ -2,6 +2,11 @@
 //  SoloDoloApp.swift
 //  SoloDolo
 //
+//  Author: photon
+//
+//  App entry point. Creates the shared BridgeConnection and shows the
+//  connect screen in the main window.
+//
 
 import SwiftUI
 

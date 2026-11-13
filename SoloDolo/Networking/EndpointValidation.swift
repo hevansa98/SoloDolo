@@ -2,6 +2,11 @@
 //  EndpointValidation.swift
 //  SoloDolo
 //
+//  Author: photon
+//
+//  Validates user-entered host and port text and turns it into values
+//  NWConnection can use (IPv4 addresses, hostnames, ports 1-65535).
+//
 
 import Foundation
 import Network
