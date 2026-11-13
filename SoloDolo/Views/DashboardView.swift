@@ -9,23 +9,46 @@
 //
 
 import SwiftUI
+import MapKit
 
 struct DashboardView: View {
     let bridge: BridgeConnection
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        // Tapping the indicator returns to the connect screen
-        Button {
-            dismiss()
-        } label: {
-            ConnectionIndicator(label: "D", status: bridge.status)
-                .contentShape(Rectangle())
+        VStack(alignment: .leading, spacing: 16) {
+            // Tapping the indicator returns to the connect screen
+            Button {
+                dismiss()
+            } label: {
+                ConnectionIndicator(label: "D", status: bridge.status)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Shows connection settings")
+            
+            Spacer()
+
+            HStack(spacing: 16) {
+                Map()
+                    .dashboardPanel()
+
+                GPSStatusPanel(gps: bridge.gps)
+                    .dashboardPanel()
+            }
+
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
-        .accessibilityHint("Shows connection settings")
         .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+private extension View {
+    /// Square tile with rounded corners, sized to share its row equally.
+    func dashboardPanel() -> some View {
+        self
+            .aspectRatio(1, contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

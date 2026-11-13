@@ -26,6 +26,8 @@ enum ConnectionStatus: Equatable {
 @Observable
 final class BridgeConnection {
     private(set) var status: ConnectionStatus = .idle
+    // Filled in once GnssFix and ServerHello frames are decoded
+    private(set) var gps = GPSStatus()
 
     @ObservationIgnored private var connection: NWConnection?
     @ObservationIgnored private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "SoloDolo", category: "BridgeConnection")

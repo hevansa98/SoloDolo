@@ -21,9 +21,7 @@ struct ConnectionIndicator: View {
                 .font(.subheadline)
                 .fontWeight(.medium)
 
-            Circle()
-                .fill(status.tint)
-                .frame(width: 10, height: 10)
+            StatusDot(color: status.tint)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Dolo connection")
