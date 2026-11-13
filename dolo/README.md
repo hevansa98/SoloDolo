@@ -1,7 +1,7 @@
 # Dolo
 
 The Raspberry Pi half of SoloDolo (C++20). Reads ADS-B from dump1090 (NooElec RTL-SDR) and, once a GNSS HAT
-is fitted, GNSS from gpsd, and streams both to the **Solo** iPad app over TCP.
+is fitted, GNSS (from gpsd or NMEA read directly off a serial port), and streams both to the **Solo** iPad app over TCP.
 
 ## Compartmentalization
 
@@ -24,7 +24,8 @@ antenna → SDR → dump1090-mutability ──SBS :30003──▶ Dolo ──pro
 |---|---|
 | `src/sbs.*` | dump1090 SBS line parser |
 | `src/aircraft.*` | merges per-ICAO state, prunes stale aircraft, builds `TrafficSnapshot` |
-| `src/gnss.*` | gpsd TPV/SKY → `GnssFix` (optional) |
+| `src/gnss.*` | gpsd TPV/SKY or NMEA (RMC, GGA, GSA, GSV) → `GnssFix` (optional) |
+| `src/serial.*` | serial port line reader (reopens the device after errors) |
 | `src/hub.*` | :5555 protobuf (handshake, ping/pong, replay of latest state) and :5556 NDJSON debug mirror |
 | `src/net.*`, `src/event_loop.*` | non-blocking sockets and a single-threaded epoll loop |
 | `src/config.*`, `config/dolo.yaml` | YAML configuration (unknown keys are rejected) |
@@ -38,21 +39,35 @@ sudo apt install cmake g++ protobuf-compiler libprotobuf-dev libyaml-cpp-dev nlo
 cd dolo
 cmake -S . -B build && cmake --build build -j
 ./build/dolo_tests
+
+# 1. Start the ADS-B decoder first; Dolo reads its SBS output on :30003.
+sudo systemctl start dump1090-mutability
+ss -ltn | grep :30003          # wait until this shows a listener
+# 2. Start Dolo (it retries the SBS connection every 5 s, so the order is forgiving but traffic stays empty until step 1).
 ./build/dolo --config config/dolo.yaml
 nc localhost 5556              # watch the JSON stream
 ```
+
+Stop in the reverse order: `Ctrl-C` Dolo, then `sudo systemctl stop dump1090-mutability`. If dump1090 is not installed or
+configured yet, run `./deploy/install.sh`, or for a quick test run it by hand instead of step 1:
+`dump1090-mutability --net --net-sbs-port 30003 --gain -10 --fix --quiet`.
 
 Configuration lives in YAML; see `config/dolo.yaml` for every option. Without `--config`, Dolo uses
 `/etc/dolo/dolo.yaml` if it exists, else built-in defaults.
 
 ADS-B source: `dump1090-mutability` (config in `/etc/default/dump1090-mutability`, SBS on :30003 bound to
-localhost). `sudo systemctl enable --now dump1090-mutability`, or for a quick test run
-`dump1090-mutability --net --net-sbs-port 30003 --gain -10 --fix --quiet`.
+localhost). `sudo systemctl enable --now dump1090-mutability` starts it now and on every boot.
 
-GNSS is off until `gnss.enabled: true`. Until then set `ownship_fallback` to the receiver location so range and
-bearing are populated.
+GNSS is off until `gnss.enabled: true`. With `gnss.source: serial`, Dolo reads NMEA straight from `gnss.device`
+(e.g. a GT-U7 on the Pi 5 GPIO UART: `dtparam=uart0=on` in `config.txt`, no serial console, `/dev/ttyAMA0`, 9600 baud);
+with `gpsd` it follows gpsd's JSON stream. While GNSS is off or has no fix, `ownship_fallback` (the receiver location)
+is used so range and bearing are still populated.
 
 ## Install as a service
+
+`./deploy/start.sh` is the one-command way to run everything: it installs Dolo if needed (`install.sh`), otherwise
+starts `dump1090-mutability`, waits for its SBS port, starts `dolo`, and prints the service status and the latest GNSS
+report. `./deploy/start.sh restart` after editing the config, `./deploy/start.sh stop` to stop both.
 
 ```bash
 ./deploy/install.sh              # installs packages, dump1090, builds and installs Dolo, starts all services
@@ -69,4 +84,4 @@ Services: `dump1090-mutability` (decoder, SBS on localhost:30003), `dolo` (start
 ## Status
 
 Verified end-to-end on this Pi: NooElec NESDR SMArt → dump1090-mutability → Dolo, ~47 aircraft with range/bearing
-on :5556. The gnss path is tested against canned gpsd messages only (no HAT). Not yet tested against the Solo app.
+on :5556. The gpsd path is tested against canned messages only; the NMEA path against canned sentences and a live GT-U7 (3D fix, 9 satellites). Not yet tested against the Solo app.

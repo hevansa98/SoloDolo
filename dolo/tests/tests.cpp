@@ -90,6 +90,56 @@ static void testGnss() {
     CHECK(!g.ownship());
 }
 
+static std::string nmea(const std::string& body) {
+    unsigned sum = 0;
+    for (const char c : body) sum ^= static_cast<unsigned char>(c);
+    char tail[8];
+    std::snprintf(tail, sizeof tail, "*%02X\r\n", sum);
+    return "$" + body + tail;
+}
+
+static void testNmea() {
+    GnssState g;
+    // Real cold-start output from the GT-U7: no fix yet.
+    CHECK(!g.applyNmea("$GPRMC,,V,,,,,,,,,,N*53\r\n"));
+    CHECK(g.applyNmea("$GPGGA,,,,,,0,00,99.99,,,,,,*48\r\n"));
+    CHECK(!g.ownship() && g.toProto().fix_mode() == pb::FIX_MODE_NO_FIX && g.used == 0);
+
+    // A fix: 40 deg 30.000' N, 75 deg 15.000' W, 100.0 m MSL, 10 kt, track 90.
+    CHECK(!g.applyNmea(nmea("GPGSV,1,1,02,01,40,083,46,02,17,308,41")));
+    CHECK(!g.applyNmea(nmea("GLGSV,1,1,03,65,10,100,30,66,20,200,31,67,30,300,32")));
+    CHECK(!g.applyNmea(nmea("GPRMC,010203.50,A,4030.000,N,07515.000,W,10.0,90.0,010126,,,A")));
+    CHECK(!g.applyNmea(nmea("GPGSA,A,3,01,02,,,,,,,,,,,1.8,0.9,1.5")));
+    CHECK(g.applyNmea(nmea("GPGGA,010203.50,4030.000,N,07515.000,W,1,07,0.9,100.0,M,-34.0,M,,")));
+    NEAR(*g.lat, 40.5, 1e-9);
+    NEAR(*g.lon, -75.25, 1e-9);
+    const auto f = g.toProto();
+    CHECK(f.fix_mode() == pb::FIX_MODE_3D && f.satellites_used() == 7 && f.satellites_visible() == 5);
+    CHECK(f.fix_unix_ms() == 1767229323500ULL);  // 2026-01-01T01:02:03.500Z
+    NEAR(f.altitude_msl_m(), 100.0, 1e-3);
+    NEAR(f.ground_speed_kt(), 10.0, 1e-3);
+    NEAR(f.track_true_deg(), 90.0, 1e-3);
+    NEAR(f.hdop(), 0.9, 1e-3);
+    NEAR(f.vdop(), 1.5, 1e-3);
+    CHECK(g.ownship() && g.ownship()->altMslFt);
+
+    // A 2D fix from GSA wins over GGA's altitude.
+    g.applyNmea(nmea("GNGSA,A,2,01,02,,,,,,,,,,,1.8,0.9,1.5"));
+    g.applyNmea(nmea("GNGGA,010204.00,4030.000,N,07515.000,W,1,04,0.9,100.0,M,-34.0,M,,"));
+    CHECK(g.toProto().fix_mode() == pb::FIX_MODE_2D && !g.toProto().has_altitude_msl_m());
+
+    // Bad input is ignored.
+    GnssState b;
+    CHECK(!b.applyNmea("$GPGGA,010203.50,4030.000,N,07515.000,W,1,07,0.9,100.0,M,-34.0,M,,*00"));  // bad checksum
+    CHECK(!b.applyNmea("GPGGA,no dollar sign"));
+    CHECK(!b.applyNmea(nmea("GPGGA,010203.50,9900.000,N,07515.000,W,1,07,0.9,100.0,M,-34.0,M,,")) || !b.ownship());
+    CHECK(!b.ownship());
+    CHECK(!b.applyNmea(""));
+
+    // Losing the fix clears the position again.
+    CHECK(g.applyNmea("$GPGGA,,,,,,0,00,99.99,,,,,,*48\r\n") && !g.ownship());
+}
+
 static void testConfig() {
     const Config d = Config::fromYaml("");
     CHECK(d.port == 5555 && d.debugPort == 5556 && !d.gnssEnabled && !d.fallbackLat);
@@ -100,6 +150,12 @@ static void testConfig() {
         "ownship_fallback: {lat: 1.5, lon: 2.5}\n"
         "log_level: debug\n");
     CHECK(c.port == 6000 && !c.debugPort && c.gnssEnabled && *c.fallbackLat == 1.5 && c.logLevel == "debug");
+
+    CHECK(d.gnssSource == "gpsd" && d.gnssDevice == "/dev/ttyAMA0" && d.gnssBaud == 9600);
+    const Config s = Config::fromYaml("gnss: {enabled: true, source: serial, device: /dev/ttyUSB0, baud: 38400}");
+    CHECK(s.gnssSource == "serial" && s.gnssDevice == "/dev/ttyUSB0" && s.gnssBaud == 38400);
+    CHECK_THROWS(Config::fromYaml("gnss: {source: usb}"));
+    CHECK_THROWS(Config::fromYaml("gnss: {baud: 1234}"));
 
     CHECK_THROWS(Config::fromYaml("sever: {}"));                          // typo'd key
     CHECK_THROWS(Config::fromYaml("server: {prot: 1}"));
@@ -228,7 +284,7 @@ static void testHub() {
 int main() {
     struct { const char* name; void (*fn)(); } tests[] = {
         {"framing", testFraming}, {"geo", testGeo}, {"sbs+snapshot", testSbsAndSnapshot},
-        {"gnss", testGnss}, {"config", testConfig}, {"hub", testHub},
+        {"gnss", testGnss}, {"nmea", testNmea}, {"config", testConfig}, {"hub", testHub},
     };
     for (const auto& t : tests) {
         const int before = g_failures;

@@ -18,6 +18,7 @@
 #include "log.hpp"
 #include "net.hpp"
 #include "sbs.hpp"
+#include "serial.hpp"
 
 namespace {
 
@@ -78,18 +79,27 @@ int main(int argc, char** argv) {
         };
         sbs.start();
 
+        auto publishGnss = [&] {
+            auto env = dolo::makeEnvelope();
+            *env.mutable_gnss() = gnss.toProto();
+            hub.broadcast(env);
+        };
+
         std::unique_ptr<dolo::TcpClient> gpsd;
-        if (cfg.gnssEnabled) {
+        std::unique_ptr<dolo::SerialLineReader> nmea;
+        if (cfg.gnssEnabled && cfg.gnssSource == "serial") {
+            nmea = std::make_unique<dolo::SerialLineReader>(loop, "GNSS", cfg.gnssDevice, cfg.gnssBaud);
+            nmea->onLine = [&](std::string_view line) {
+                if (gnss.applyNmea(line)) publishGnss();
+            };
+            nmea->start();
+        } else if (cfg.gnssEnabled) {
             gpsd = std::make_unique<dolo::TcpClient>(loop, "gpsd", cfg.gpsdHost, cfg.gpsdPort);
             dolo::TcpClient* g = gpsd.get();
             g->onConnect = [g] { g->send("?WATCH={\"enable\":true,\"json\":true}\n"); };
             g->onLine = [&](std::string_view line) {
                 const auto j = nlohmann::json::parse(line, nullptr, /*allow_exceptions=*/false);
-                if (!j.is_discarded() && gnss.apply(j)) {
-                    auto env = dolo::makeEnvelope();
-                    *env.mutable_gnss() = gnss.toProto();
-                    hub.broadcast(env);
-                }
+                if (!j.is_discarded() && gnss.apply(j)) publishGnss();
             };
             g->start();
         } else {

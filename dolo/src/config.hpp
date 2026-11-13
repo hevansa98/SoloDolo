@@ -17,8 +17,11 @@ struct Config {
     int sbsPort = 30003;
     double pruneAfterS = 60.0;
 
-    // gnss: opt-in until a GNSS HAT is fitted
+    // gnss: opt-in until a GNSS receiver is fitted
     bool gnssEnabled = false;
+    std::string gnssSource = "gpsd";  // "gpsd" or "serial" (raw NMEA read straight from gnssDevice)
+    std::string gnssDevice = "/dev/ttyAMA0";
+    int gnssBaud = 9600;
     std::string gpsdHost = "127.0.0.1";
     int gpsdPort = 2947;
 

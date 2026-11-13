@@ -11,10 +11,13 @@ adsb:                   # dump1090's SBS (BaseStation) output
   port: 30003
   prune_after_s: 60     # drop aircraft not heard from for this long
 
-gnss:                   # gpsd; leave disabled until a GNSS HAT is fitted
+gnss:                   # leave disabled until a GNSS receiver is fitted
   enabled: false
-  host: 127.0.0.1
-  port: 2947
+  source: gpsd          # gpsd | serial (raw NMEA read straight from the device below, no gpsd needed)
+  host: 127.0.0.1       # gpsd only
+  port: 2947            # gpsd only
+  device: /dev/ttyAMA0  # serial only; Pi 5 GPIO14/15 UART (needs dtparam=uart0=on)
+  baud: 9600            # serial only; GT-U7 default
 
 traffic_hz: 1.0         # TrafficSnapshot rate
 

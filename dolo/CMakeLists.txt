@@ -22,7 +22,7 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${SOLODOLO_PROTO_DIR}/solodolo.proto
 
 add_library(dolo_core STATIC
   src/aircraft.cpp src/config.cpp src/event_loop.cpp src/gnss.cpp
-  src/hub.cpp src/net.cpp src/sbs.cpp ${PROTO_SRCS})
+  src/hub.cpp src/net.cpp src/sbs.cpp src/serial.cpp ${PROTO_SRCS})
 target_include_directories(dolo_core PUBLIC src ${CMAKE_CURRENT_BINARY_DIR}/gen)
 target_compile_definitions(dolo_core PUBLIC DOLO_VERSION="${PROJECT_VERSION}")
 target_compile_options(dolo_core PRIVATE -Wall -Wextra)

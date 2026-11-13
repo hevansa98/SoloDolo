@@ -8,6 +8,7 @@ ExecStart=/usr/local/bin/dolo --config /etc/dolo/dolo.yaml
 Restart=always
 RestartSec=2
 DynamicUser=yes
+SupplementaryGroups=dialout
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
