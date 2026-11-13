@@ -33,6 +33,8 @@ struct DashboardView: View {
                 TrafficMap(aircraft: NearbyAircraft.all(in: bridge.traffic, from: Ownship.assumedLocation),
                            ownship: Ownship.assumedLocation)
                     .dashboardPanel()
+                
+                Spacer()
 
                 GPSStatusPanel(gps: bridge.gps)
                     .dashboardPanel()
