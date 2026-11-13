@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Build output
+build/
+DerivedData/
+*.xcresult
+
+# Swift Package Manager
+.build/
+.swiftpm/

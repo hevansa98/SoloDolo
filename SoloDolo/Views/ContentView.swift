@@ -2,8 +2,6 @@
 //  ContentView.swift
 //  SoloDolo
 //
-//  Created by odin on 11/9/26.
-//
 
 import SwiftUI
 import Network
