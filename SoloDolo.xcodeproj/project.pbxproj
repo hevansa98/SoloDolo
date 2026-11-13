@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		84FC3F7330A6BABF00ED22D6 /* SwiftProtobuf in Frameworks */ = {isa = PBXBuildFile; productRef = 84FC3F7230A6BABF00ED22D6 /* SwiftProtobuf */; };
+		84FC3F7530A6BABF00ED22D6 /* SwiftProtobufPluginLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 84FC3F7430A6BABF00ED22D6 /* SwiftProtobufPluginLibrary */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		84BEA80230A2C68C00100D1F /* SoloDolo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoloDolo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -41,6 +46,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84FC3F7530A6BABF00ED22D6 /* SwiftProtobufPluginLibrary in Frameworks */,
+				84FC3F7330A6BABF00ED22D6 /* SwiftProtobuf in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +91,8 @@
 			);
 			name = SoloDolo;
 			packageProductDependencies = (
+				84FC3F7230A6BABF00ED22D6 /* SwiftProtobuf */,
+				84FC3F7430A6BABF00ED22D6 /* SwiftProtobufPluginLibrary */,
 			);
 			productName = SoloDolo;
 			productReference = 84BEA80230A2C68C00100D1F /* SoloDolo.app */;
@@ -113,6 +122,9 @@
 			);
 			mainGroup = 84BEA7F930A2C68C00100D1F;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				84FC3F7130A6BABF00ED22D6 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 84BEA80330A2C68C00100D1F /* Products */;
 			projectDirPath = "";
@@ -357,6 +369,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		84FC3F7130A6BABF00ED22D6 /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-protobuf";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.40.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		84FC3F7230A6BABF00ED22D6 /* SwiftProtobuf */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84FC3F7130A6BABF00ED22D6 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobuf;
+		};
+		84FC3F7430A6BABF00ED22D6 /* SwiftProtobufPluginLibrary */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84FC3F7130A6BABF00ED22D6 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
+			productName = SwiftProtobufPluginLibrary;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 84BEA7FA30A2C68C00100D1F /* Project object */;
 }

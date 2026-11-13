@@ -30,12 +30,16 @@ struct DashboardView: View {
             Spacer()
 
             HStack(spacing: 16) {
-                Map()
+                TrafficMap(aircraft: NearbyAircraft.all(in: bridge.traffic, from: Ownship.assumedLocation),
+                           ownship: Ownship.assumedLocation)
                     .dashboardPanel()
 
                 GPSStatusPanel(gps: bridge.gps)
                     .dashboardPanel()
             }
+
+            TrafficPanel(aircraft: NearbyAircraft.closest(in: bridge.traffic, to: Ownship.assumedLocation),
+                         totalCount: bridge.traffic?.aircraft.count ?? 0)
 
             Spacer(minLength: 0)
         }
