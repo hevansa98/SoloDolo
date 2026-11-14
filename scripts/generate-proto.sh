@@ -5,7 +5,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-out_dir="$repo_root/SoloDolo/Generated"
+out_dir="$repo_root/solo/Generated"
 
 mkdir -p "$out_dir"
 protoc \
