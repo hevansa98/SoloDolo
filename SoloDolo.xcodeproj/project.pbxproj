@@ -16,7 +16,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		84FC3F5730A68BE900ED22D6 /* Exceptions for "SoloDolo" folder in "SoloDolo" target */ = {
+		84FC3F5730A68BE900ED22D6 /* Exceptions for "solo" folder in "SoloDolo" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -26,12 +26,12 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		84BEA80430A2C68C00100D1F /* SoloDolo */ = {
+		84BEA80430A2C68C00100D1F /* solo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				84FC3F5730A68BE900ED22D6 /* Exceptions for "SoloDolo" folder in "SoloDolo" target */,
+				84FC3F5730A68BE900ED22D6 /* Exceptions for "solo" folder in "SoloDolo" target */,
 			);
-			path = SoloDolo;
+			path = solo;
 			sourceTree = "<group>";
 		};
 		84FC3F5430A68A5700ED22D6 /* docs */ = {
@@ -57,7 +57,7 @@
 		84BEA7F930A2C68C00100D1F = {
 			isa = PBXGroup;
 			children = (
-				84BEA80430A2C68C00100D1F /* SoloDolo */,
+				84BEA80430A2C68C00100D1F /* solo */,
 				84FC3F5430A68A5700ED22D6 /* docs */,
 				84BEA80330A2C68C00100D1F /* Products */,
 			);
@@ -87,7 +87,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				84BEA80430A2C68C00100D1F /* SoloDolo */,
+				84BEA80430A2C68C00100D1F /* solo */,
 			);
 			name = SoloDolo;
 			packageProductDependencies = (

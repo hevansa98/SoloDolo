@@ -8,7 +8,7 @@
 //  PPS lock) and the thresholds that grade each reading.
 //
 
-import Foundation
+import CoreLocation
 
 /// How healthy a single GPS reading is. Views map this to a color.
 enum SignalQuality {
@@ -28,7 +28,15 @@ struct GPSStatus: Equatable {
     var satellitesUsed: Int?       // GnssFix.satellites_used
     var satellitesVisible: Int?    // GnssFix.satellites_visible
     var hdop: Double?              // GnssFix.hdop
+    var latitudeDeg: Double?       // GnssFix.latitude_deg, only with a 2D/3D fix
+    var longitudeDeg: Double?      // GnssFix.longitude_deg, only with a 2D/3D fix
     var ppsLocked: Bool?           // ServerHello.pps_locked
+
+    /// Ownship position from the GPS fix, or `nil` without a 2D/3D fix.
+    var coordinate: CLLocationCoordinate2D? {
+        guard let latitudeDeg, let longitudeDeg else { return nil }
+        return CLLocationCoordinate2D(latitude: latitudeDeg, longitude: longitudeDeg)
+    }
 
     var fixQuality: SignalQuality {
         switch fixMode {

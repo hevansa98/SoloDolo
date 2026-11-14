@@ -5,16 +5,10 @@
 //  Author: photon
 //
 //  Turns Dolo's TrafficSnapshot into aircraft ranked by distance from
-//  ownship. Ownship is assumed to be Lewisville City Hall until the GNSS
-//  HAT provides a real fix.
+//  ownship.
 //
 
 import CoreLocation
-
-enum Ownship {
-    /// Lewisville City Hall, 151 W Church St, Lewisville, TX.
-    static let assumedLocation = CLLocationCoordinate2D(latitude: 33.0462, longitude: -96.9942)
-}
 
 /// One aircraft, with distance and bearing measured from ownship.
 struct NearbyAircraft: Identifiable {

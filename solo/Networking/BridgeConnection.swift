@@ -230,5 +230,10 @@ private extension GPSStatus {
         satellitesUsed = Int(fix.satellitesUsed)
         satellitesVisible = Int(fix.satellitesVisible)
         hdop = fix.hasHdop ? Double(fix.hdop) : nil
+
+        // Dolo only fills in lat/lon with a 2D/3D fix; otherwise they're proto3 zeros
+        let hasPosition = fixMode == .twoD || fixMode == .threeD
+        latitudeDeg = hasPosition ? fix.latitudeDeg : nil
+        longitudeDeg = hasPosition ? fix.longitudeDeg : nil
     }
 }
