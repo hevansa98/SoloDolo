@@ -30,6 +30,7 @@ struct GPSStatus: Equatable {
     var hdop: Double?              // GnssFix.hdop
     var latitudeDeg: Double?       // GnssFix.latitude_deg, only with a 2D/3D fix
     var longitudeDeg: Double?      // GnssFix.longitude_deg, only with a 2D/3D fix
+    var altitudeMslM: Double?      // GnssFix.altitude_msl_m, only with a 3D fix
     var ppsLocked: Bool?           // ServerHello.pps_locked
 
     /// Ownship position from the GPS fix, or `nil` without a 2D/3D fix.

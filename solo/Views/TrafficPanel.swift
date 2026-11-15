@@ -52,8 +52,8 @@ struct TrafficPanel: View {
                 GridRow {
                     Text(plane.displayName)
                         .fontWeight(.medium)
-                    Text(plane.distanceNm.formatted(.number.precision(.fractionLength(1))) + " nm")
-                    Text(Self.degrees(plane.bearingDeg))
+                    Text(plane.distanceNm.map { $0.formatted(.number.precision(.fractionLength(1))) + " nm" } ?? "—")
+                    Text(plane.bearingDeg.map(Self.degrees) ?? "—")
                     Text(altitudeText(plane))
                     Text(plane.groundSpeedKt.map { "\(Int($0.rounded())) kt" } ?? "—")
                     Text(plane.trackDeg.map { Self.degrees(Double($0)) } ?? "—")
@@ -70,7 +70,7 @@ struct TrafficPanel: View {
     private static let columns = ["Callsign", "Distance", "Bearing", "Altitude", "Speed", "Track", "Squawk"]
 
     /// Zero-padded heading, e.g. "045°".
-    private static func degrees(_ value: Double) -> String {
+    private nonisolated static func degrees(_ value: Double) -> String {
         String(format: "%03d°", Int(value.rounded()) % 360)
     }
 
@@ -82,8 +82,8 @@ struct TrafficPanel: View {
     private func accessibilityText(_ plane: NearbyAircraft) -> String {
         var parts = [
             plane.displayName,
-            "\(plane.distanceNm.formatted(.number.precision(.fractionLength(1)))) nautical miles",
-            "bearing \(Int(plane.bearingDeg.rounded()) % 360) degrees",
+            plane.distanceNm.map { "\($0.formatted(.number.precision(.fractionLength(1)))) nautical miles" } ?? "distance unknown",
+            plane.bearingDeg.map { "bearing \(Int($0.rounded()) % 360) degrees" } ?? "bearing unknown",
             altitudeText(plane) == "—" ? "altitude unknown" : altitudeText(plane).replacingOccurrences(of: "GND", with: "on ground"),
         ]
         if let squawk = plane.squawk { parts.append("squawk \(squawk)") }
@@ -92,7 +92,7 @@ struct TrafficPanel: View {
 }
 
 #Preview("Traffic") {
-    TrafficPanel(aircraft: NearbyAircraft.closest(in: .previewSample, to: Ownship.assumedLocation),
+    TrafficPanel(aircraft: NearbyAircraft.closest(in: .previewSample, to: Ownship.defaultMapCenter),
                  totalCount: SDTrafficSnapshot.previewSample.aircraft.count)
         .padding()
 }

@@ -4,8 +4,8 @@
 //
 //  Author: photon
 //
-//  Dashboard tile listing GPS health as gumballs: fix, satellites, HDOP,
-//  and PPS lock.
+//  Dashboard tile listing GPS health as gumballs (fix, satellites, HDOP,
+//  PPS lock) and the current position: lat/lon as DD.MM.SSSS, altitude MSL.
 //
 
 import SwiftUI
@@ -23,6 +23,12 @@ struct GPSStatusPanel: View {
             row("HDOP", value: gps.hdop.map { $0.formatted(.number.precision(.fractionLength(1))) },
                 quality: gps.hdopQuality)
             row("PPS", value: gps.ppsLocked.map { $0 ? "Locked" : "Unlocked" }, quality: gps.ppsQuality)
+
+            Divider()
+
+            positionRow("Lat", value: gps.latitudeDeg.map { CoordinateFormatter.dms($0, isLatitude: true) })
+            positionRow("Lon", value: gps.longitudeDeg.map { CoordinateFormatter.dms($0, isLatitude: false) })
+            positionRow("Alt", value: gps.altitudeMslM.map(CoordinateFormatter.altitudeMSL))
 
             Spacer(minLength: 0)
         }
@@ -44,6 +50,21 @@ struct GPSStatusPanel: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue("\(value ?? "No data"), \(quality.description)")
+    }
+
+    /// Position values have no quality dot; they're blank ("—") without a fix.
+    private func positionRow(_ label: String, value: String?) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            Text(value ?? "—")
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+        .font(.subheadline)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityValue(value ?? "No data")
     }
 
     private var fixText: String? {
@@ -69,7 +90,7 @@ struct GPSStatusPanel: View {
 }
 
 #Preview("Mixed") {
-    GPSStatusPanel(gps: GPSStatus(fixMode: .threeD, satellitesUsed: 5, satellitesVisible: 11,
-                                  hdop: 6.3, ppsLocked: true))
+    GPSStatusPanel(gps: GPSStatus(fixMode: .threeD, satellitesUsed: 5, satellitesVisible: 11, hdop: 6.3,
+                                  latitudeDeg: 33.0462, longitudeDeg: -96.9942, altitudeMslM: 165, ppsLocked: true))
         .frame(width: 320, height: 320)
 }

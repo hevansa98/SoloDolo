@@ -80,7 +80,8 @@ flowchart LR
 | `Networking/FrameCodec.swift` | 4-byte length-prefix framing; 1 MiB frame limit |
 | `Networking/EndpointValidation.swift` | Host (IPv4 or hostname) and port (1–65535) validation |
 | `Models/GPSStatus.swift` | Fix, satellites, HDOP, PPS, position, and their quality thresholds |
-| `Models/Ownship.swift` | Ownship position: the GPS fix, or the assumed location |
+| `Models/Ownship.swift` | Ownship position: the current GPS fix, or the last known one; none before the first fix |
+| `Models/CoordinateFormatter.swift` | Lat/lon as DD.MM.SSSS (seconds to hundredths) and altitude as ft MSL |
 | `Models/NearbyAircraft.swift` | Distance/bearing from ownship; sorting by distance |
 | `Views/ContentView.swift` | Connect screen; opens the dashboard once connected |
 | `Views/DashboardView.swift` | Map + GPS tiles, ADS-B table below |
@@ -202,25 +203,24 @@ Port 5556 sends the same `Envelope`s in protobuf's JSON mapping. Set `server.deb
 
 ## 6. Ownship, range and bearing
 
-Each half computes range and bearing independently, using the same rule:
-
-| | With a 2D/3D GNSS fix | Without a fix |
-|---|---|---|
-| **Dolo** (`range_nm`, `bearing_true_deg` in each `Aircraft`) | GNSS position | `ownship_fallback` in `dolo.yaml` |
-| **Solo** (map, ADS-B table) | `GnssFix` lat/lon | `Ownship.assumedLocation`: Lewisville City Hall, 33.0462, -96.9942 |
+| | With a 2D/3D GNSS fix | Fix lost | Never had a fix |
+|---|---|---|---|
+| **Dolo** (`range_nm`, `bearing_true_deg` in each `Aircraft`) | GNSS position | `ownship_fallback` in `dolo.yaml` | `ownship_fallback` |
+| **Solo** ownship (map dot) | `GnssFix` lat/lon, blue dot | last known position, orange dot | none; no dot |
+| **Solo** range/bearing (ADS-B table) | computed from ownship | computed from last known position | Dolo's `range_nm` / `bearing_true_deg` |
 
 - Solo ignores `GnssFix` lat/lon unless `fix_mode` is 2D or 3D. Without a fix they arrive as proto3 zeros.
-- Losing the fix moves Solo back to the assumed location, not to the last known position.
+- The last known position survives disconnects and reconnects. It is cleared only when the app restarts.
 - Solo computes distance (CoreLocation, in nautical miles) and initial great-circle bearing on the iPad, from each aircraft's lat/lon. Aircraft without a decoded position are left off the map and the table.
-- The two fallback locations differ by about 0.35 mi. Set them to the same point to make Dolo's and Solo's numbers agree.
+- Before the first fix, the map is centred on `Ownship.defaultMapCenter` (Lewisville City Hall, 33.0462, -96.9942). Nothing is drawn there.
 
 ## 7. Dashboard
 
 | Tile | Content |
 |---|---|
 | Connection gumball "D" (top-left) | Connection status color; tap to return to the connect screen |
-| Map (square) | Ownship dot (blue = GPS, gray = assumed) and every positioned aircraft, rotated to its track (orange airborne, gray on ground). It starts about 30 nm across and recentres only when the fix is gained or lost. |
-| GPS (square) | Four gumballs; thresholds below |
+| Map (square) | Ownship dot (blue = current fix, orange = last known; hidden before any fix) and every positioned aircraft, rotated to its track (orange airborne, gray on ground). It starts about 30 nm across and recentres once, when the first position arrives. |
+| GPS (square) | Four gumballs (thresholds below), then Lat/Lon as DD.MM.SSSS with N/S/E/W (e.g. `N 33.02.4632`, `W 096.59.3912`) and Alt in ft MSL (3D fix only). Position rows show "—" without a fix. |
 | ADS-B (full width) | Closest 5 aircraft: callsign (or ICAO hex), distance, bearing, altitude (or GND), speed, track, squawk |
 
 | GPS gumball | Green | Orange | Red | Gray |

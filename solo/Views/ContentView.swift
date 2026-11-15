@@ -13,7 +13,7 @@ import Network
 
 struct ContentView: View {
     // Defaults match the bridge's DHCP address and protobuf port in docs/architecture.md
-    @State private var hostText = "192.168.50.1"
+    @State private var hostText = "nidavellir"
     // Kept as raw text so Connect always validates exactly what's on screen
     @State private var portText = "5555"
     @State private var hostInvalid = false

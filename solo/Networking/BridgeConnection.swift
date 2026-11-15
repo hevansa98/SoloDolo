@@ -9,6 +9,7 @@
 //  with Ping/Pong, and publishes connection status, GPS, and traffic.
 //
 
+import CoreLocation
 import Foundation
 import Network
 import Observation
@@ -35,6 +36,8 @@ final class BridgeConnection {
     private(set) var status: ConnectionStatus = .idle
     private(set) var gps = GPSStatus()
     private(set) var traffic: SDTrafficSnapshot?
+    /// Most recent GPS position. Kept when the fix or the connection is lost.
+    private(set) var lastKnownPosition: CLLocationCoordinate2D?
     private(set) var bridgeVersion: String?
 
     @ObservationIgnored private var connection: NWConnection?
@@ -158,6 +161,7 @@ final class BridgeConnection {
             startKeepalive()
         case .gnss(let fix):
             gps.update(from: fix)
+            if let position = gps.coordinate { lastKnownPosition = position }
         case .traffic(let snapshot):
             traffic = snapshot
         case .pong:
@@ -235,5 +239,6 @@ private extension GPSStatus {
         let hasPosition = fixMode == .twoD || fixMode == .threeD
         latitudeDeg = hasPosition ? fix.latitudeDeg : nil
         longitudeDeg = hasPosition ? fix.longitudeDeg : nil
+        altitudeMslM = fixMode == .threeD && fix.hasAltitudeMslM ? Double(fix.altitudeMslM) : nil
     }
 }

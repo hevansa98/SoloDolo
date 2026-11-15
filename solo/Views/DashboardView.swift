@@ -15,7 +15,7 @@ struct DashboardView: View {
     let bridge: BridgeConnection
     @Environment(\.dismiss) private var dismiss
 
-    private var ownship: Ownship { Ownship(gps: bridge.gps) }
+    private var ownship: Ownship? { Ownship(gps: bridge.gps, lastKnown: bridge.lastKnownPosition) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -32,7 +32,7 @@ struct DashboardView: View {
             Spacer()
 
             HStack(spacing: 16) {
-                TrafficMap(aircraft: NearbyAircraft.all(in: bridge.traffic, from: ownship.coordinate),
+                TrafficMap(aircraft: NearbyAircraft.all(in: bridge.traffic, from: ownship?.coordinate),
                            ownship: ownship)
                     .dashboardPanel()
                 
@@ -42,7 +42,7 @@ struct DashboardView: View {
                     .dashboardPanel()
             }
 
-            TrafficPanel(aircraft: NearbyAircraft.closest(in: bridge.traffic, to: ownship.coordinate),
+            TrafficPanel(aircraft: NearbyAircraft.closest(in: bridge.traffic, to: ownship?.coordinate),
                          totalCount: bridge.traffic?.aircraft.count ?? 0)
 
             Spacer(minLength: 0)

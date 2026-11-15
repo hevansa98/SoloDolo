@@ -124,7 +124,7 @@ On the dashboard:
 - **GPS** shows fix, satellites, HDOP and PPS lock.
 - **ADS-B** lists the five closest aircraft.
 
-Until Dolo reports a 2D/3D GPS fix, distances are measured from an assumed position: Lewisville City Hall, shown as a gray dot on the map.
+Ownship is a **blue** dot while Dolo has a GPS fix, and an **orange** dot at the last known position after the fix is lost. No dot is drawn until Dolo has reported a position. Until then, the ADS-B table uses the range and bearing Dolo measures from its `ownship_fallback`.
 
 ### Stop
 

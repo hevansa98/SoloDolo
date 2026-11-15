@@ -4,8 +4,9 @@
 //
 //  Author: photon
 //
-//  Dashboard map: ownship (GPS position from Dolo, or the assumed location)
-//  and every ADS-B aircraft with a position, drawn pointing along its track.
+//  Dashboard map: ownship (blue = current GPS fix, orange = last known
+//  position; hidden until Dolo reports one) and every ADS-B aircraft with a
+//  position, drawn pointing along its track.
 //
 
 import SwiftUI
@@ -13,13 +14,13 @@ import MapKit
 
 struct TrafficMap: View {
     let aircraft: [NearbyAircraft]
-    let ownship: Ownship
+    let ownship: Ownship?
     @State private var camera: MapCameraPosition
 
-    init(aircraft: [NearbyAircraft], ownship: Ownship) {
+    init(aircraft: [NearbyAircraft], ownship: Ownship?) {
         self.aircraft = aircraft
         self.ownship = ownship
-        _camera = State(initialValue: Self.region(around: ownship.coordinate))
+        _camera = State(initialValue: Self.region(around: ownship?.coordinate ?? Ownship.defaultMapCenter))
     }
 
     /// Roughly 30 nm across, so local traffic around ownship is visible at a glance.
@@ -31,12 +32,14 @@ struct TrafficMap: View {
 
     var body: some View {
         Map(position: $camera) {
-            Annotation(ownship.isAssumed ? "Ownship (assumed)" : "Ownship", coordinate: ownship.coordinate) {
-                Circle()
-                    .fill(ownship.isAssumed ? .gray : .blue)
-                    .stroke(.white, lineWidth: 2)
-                    .frame(width: 14, height: 14)
-                    .shadow(radius: 1)
+            if let ownship {
+                Annotation(ownship.isCurrent ? "Ownship" : "Ownship (last known)", coordinate: ownship.coordinate) {
+                    Circle()
+                        .fill(ownship.isCurrent ? .blue : .orange)
+                        .stroke(.white, lineWidth: 2)
+                        .frame(width: 14, height: 14)
+                        .shadow(radius: 1)
+                }
             }
 
             ForEach(aircraft) { plane in
@@ -46,9 +49,10 @@ struct TrafficMap: View {
             }
         }
         .mapStyle(.standard(pointsOfInterest: .excludingAll))
-        // Jump to the real position when the first GPS fix arrives (or back when it's lost).
-        // Later fixes don't move the camera, so panning around isn't undone every second.
-        .onChange(of: ownship.isAssumed) {
+        // Jump to ownship when the first position arrives. Later fixes don't move the
+        // camera, so panning around isn't undone every second.
+        .onChange(of: ownship == nil) {
+            guard let ownship else { return }
             withAnimation { camera = Self.region(around: ownship.coordinate) }
         }
     }
@@ -70,7 +74,7 @@ private struct AircraftSymbol: View {
 }
 
 #Preview {
-    TrafficMap(aircraft: NearbyAircraft.all(in: .previewSample, from: Ownship.assumedLocation),
-               ownship: Ownship(gps: GPSStatus()))
+    TrafficMap(aircraft: NearbyAircraft.all(in: .previewSample, from: Ownship.defaultMapCenter),
+               ownship: Ownship(gps: GPSStatus(), lastKnown: Ownship.defaultMapCenter))
         .frame(width: 400, height: 400)
 }

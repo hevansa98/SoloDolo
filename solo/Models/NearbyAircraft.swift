@@ -5,7 +5,7 @@
 //  Author: photon
 //
 //  Turns Dolo's TrafficSnapshot into aircraft ranked by distance from
-//  ownship.
+//  ownship. Before Solo knows ownship, Dolo's own range/bearing are used.
 //
 
 import CoreLocation
@@ -16,8 +16,8 @@ struct NearbyAircraft: Identifiable {
     let callsign: String?
     let squawk: String?
     let coordinate: CLLocationCoordinate2D
-    let distanceNm: Double
-    let bearingDeg: Double      // true bearing from ownship to the aircraft
+    let distanceNm: Double?     // nil when neither Solo nor Dolo knows ownship
+    let bearingDeg: Double?     // true bearing from ownship to the aircraft
     let altitudeFt: Int32?      // barometric, falling back to geometric
     let groundSpeedKt: Float?
     let trackDeg: Float?
@@ -28,20 +28,21 @@ struct NearbyAircraft: Identifiable {
         callsign ?? String(format: "%06X", id)
     }
 
-    /// Every aircraft with a decoded position, nearest first.
-    static func all(in snapshot: SDTrafficSnapshot?, from origin: CLLocationCoordinate2D) -> [NearbyAircraft] {
+    /// Every aircraft with a decoded position, nearest first (unknown distances last).
+    /// With no `origin`, distance and bearing come from Dolo, which measures from its own fallback position.
+    static func all(in snapshot: SDTrafficSnapshot?, from origin: CLLocationCoordinate2D?) -> [NearbyAircraft] {
         guard let snapshot else { return [] }
         return snapshot.aircraft
             .compactMap { NearbyAircraft($0, from: origin) }
-            .sorted { $0.distanceNm < $1.distanceNm }
+            .sorted { ($0.distanceNm ?? .infinity) < ($1.distanceNm ?? .infinity) }
     }
 
-    /// The `limit` aircraft closest to `origin`. Aircraft without a decoded position are skipped.
-    static func closest(in snapshot: SDTrafficSnapshot?, to origin: CLLocationCoordinate2D, limit: Int = 5) -> [NearbyAircraft] {
-        Array(all(in: snapshot, from: origin).prefix(limit))
+    /// The `limit` closest aircraft that have a position and a known distance.
+    static func closest(in snapshot: SDTrafficSnapshot?, to origin: CLLocationCoordinate2D?, limit: Int = 5) -> [NearbyAircraft] {
+        Array(all(in: snapshot, from: origin).filter { $0.distanceNm != nil }.prefix(limit))
     }
 
-    init?(_ aircraft: SDAircraft, from origin: CLLocationCoordinate2D) {
+    init?(_ aircraft: SDAircraft, from origin: CLLocationCoordinate2D?) {
         guard aircraft.hasLatitudeDeg, aircraft.hasLongitudeDeg else { return nil }
         let position = CLLocationCoordinate2D(latitude: aircraft.latitudeDeg, longitude: aircraft.longitudeDeg)
 
@@ -49,8 +50,13 @@ struct NearbyAircraft: Identifiable {
         callsign = aircraft.hasCallsign && !aircraft.callsign.isEmpty ? aircraft.callsign : nil
         squawk = aircraft.hasSquawk ? aircraft.squawk : nil
         coordinate = position
-        distanceNm = Self.distanceNm(from: origin, to: position)
-        bearingDeg = Self.bearingDeg(from: origin, to: position)
+        if let origin {
+            distanceNm = Self.distanceNm(from: origin, to: position)
+            bearingDeg = Self.bearingDeg(from: origin, to: position)
+        } else {
+            distanceNm = aircraft.hasRangeNm ? Double(aircraft.rangeNm) : nil
+            bearingDeg = aircraft.hasBearingTrueDeg ? Double(aircraft.bearingTrueDeg) : nil
+        }
         altitudeFt = aircraft.hasAltitudeBaroFt ? aircraft.altitudeBaroFt
                    : aircraft.hasAltitudeGeomFt ? aircraft.altitudeGeomFt : nil
         groundSpeedKt = aircraft.hasGroundSpeedKt ? aircraft.groundSpeedKt : nil
