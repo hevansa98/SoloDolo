@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "SD-icon.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -12,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "SD-icon1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -23,6 +25,7 @@
           "value" : "tinted"
         }
       ],
+      "filename" : "SD-icon2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
