@@ -7,6 +7,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "gnss/factory.hpp"
 #include "serial.hpp"
 
 namespace dolo {
@@ -75,11 +76,15 @@ Config Config::fromYaml(const std::string& text) {
     read(adsb, "port", c.sbsPort);
     read(adsb, "prune_after_s", c.pruneAfterS);
 
-    const auto gnss = section(root, "gnss", {"enabled", "source", "device", "baud", "host", "port"});
+    const auto gnss = section(root, "gnss", {"enabled", "receiver", "device", "baud", "host", "port"});
     read(gnss, "enabled", c.gnssEnabled);
-    read(gnss, "source", c.gnssSource);
+    read(gnss, "receiver", c.gnssReceiver);
     read(gnss, "device", c.gnssDevice);
-    read(gnss, "baud", c.gnssBaud);
+    if (gnss && gnss["baud"]) {
+        int baud = 0;
+        read(gnss, "baud", baud);
+        c.gnssBaud = baud;
+    }
     read(gnss, "host", c.gpsdHost);
     read(gnss, "port", c.gpsdPort);
 
@@ -102,9 +107,9 @@ Config Config::fromYaml(const std::string& text) {
     if (c.debugPort && *c.debugPort == c.port) fail("server.debug_port must differ from server.port");
     requirePort(c.sbsPort, "adsb.port");
     requirePort(c.gpsdPort, "gnss.port");
-    if (c.gnssSource != "gpsd" && c.gnssSource != "serial") fail("gnss.source must be gpsd or serial");
+    if (!isKnownGnssReceiver(c.gnssReceiver)) fail("gnss.receiver must be gt-u7, max-m8q or gpsd");
     if (c.gnssDevice.empty()) fail("gnss.device must not be empty");
-    if (!isSupportedBaud(c.gnssBaud)) fail("gnss.baud must be 4800, 9600, 19200, 38400, 57600 or 115200");
+    if (c.gnssBaud && !isSupportedBaud(*c.gnssBaud)) fail("gnss.baud must be 4800, 9600, 19200, 38400, 57600 or 115200");
     if (c.trafficHz <= 0 || c.trafficHz > 20) fail("traffic_hz must be in (0, 20]");
     if (c.pruneAfterS <= 0) fail("adsb.prune_after_s must be positive");
     if (c.logLevel != "debug" && c.logLevel != "info" && c.logLevel != "warning" && c.logLevel != "error")

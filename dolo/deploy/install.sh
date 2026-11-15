@@ -5,8 +5,8 @@
 #   ./deploy/install.sh              install / upgrade
 #   ./deploy/install.sh --uninstall  remove Dolo (keeps dump1090 and /etc/dolo)
 #
-# GNSS=serial ./deploy/install.sh    on a fresh install, also read a GNSS module's NMEA from the serial port
-#                                    (a new /etc/dolo/dolo.yaml gets gnss.enabled: true, source: serial)
+# GNSS=max-m8q ./deploy/install.sh   on a fresh install, also enable GNSS with that receiver
+#                                    (max-m8q | gt-u7 | gpsd; written to a new /etc/dolo/dolo.yaml)
 #
 # Run as your normal user; sudo is used where needed.
 set -euo pipefail
@@ -85,8 +85,12 @@ else
     if [[ -n "$lat" && -n "$lon" ]]; then
         sudo sed -i -e "s|^\(  lat:\).*|\1 $lat|" -e "s|^\(  lon:\).*|\1 $lon|" /etc/dolo/dolo.yaml
     fi
-    if [[ "${GNSS:-}" == "serial" ]]; then
-        sudo sed -i -e 's|^  enabled: false|  enabled: true|' -e 's|^  source: gpsd|  source: serial|' /etc/dolo/dolo.yaml
+    if [[ -n "${GNSS:-}" ]]; then
+        case "$GNSS" in
+            max-m8q | gt-u7 | gpsd) ;;
+            *) echo "GNSS must be max-m8q, gt-u7 or gpsd (got '$GNSS')" >&2; exit 2 ;;
+        esac
+        sudo sed -i -e 's|^  enabled: false|  enabled: true|' -e "s|^  receiver: .*|  receiver: $GNSS|" /etc/dolo/dolo.yaml
     fi
 fi
 sudo install -m644 "$here/dolo.service" /etc/systemd/system/dolo.service

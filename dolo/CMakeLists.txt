@@ -21,7 +21,10 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${SOLODOLO_PROTO_DIR}/solodolo.proto
                       PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 
 add_library(dolo_core STATIC
-  src/aircraft.cpp src/config.cpp src/event_loop.cpp src/gnss.cpp
+  src/aircraft.cpp src/config.cpp src/event_loop.cpp
+  src/gnss/factory.cpp src/gnss/gpsd.cpp src/gnss/gt_u7.cpp src/gnss/max_m8q.cpp
+  src/gnss/nmea.cpp src/gnss/state.cpp src/gnss/stream.cpp
+  src/gnss/ubx.cpp src/gnss/uart_receiver.cpp
   src/hub.cpp src/net.cpp src/sbs.cpp src/serial.cpp ${PROTO_SRCS})
 target_include_directories(dolo_core PUBLIC src ${CMAKE_CURRENT_BINARY_DIR}/gen)
 target_compile_definitions(dolo_core PUBLIC DOLO_VERSION="${PROJECT_VERSION}")

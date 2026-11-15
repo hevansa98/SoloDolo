@@ -1,11 +1,13 @@
 # Dolo
 
-The Raspberry Pi half of SoloDolo (C++20). Reads ADS-B from dump1090 (NooElec RTL-SDR) and, once a GNSS HAT
-is fitted, GNSS (from gpsd or NMEA read directly off a serial port), and streams both to the **Solo** iPad app over TCP.
+The Raspberry Pi half of SoloDolo (C++20). Reads ADS-B from dump1090 (NooElec RTL-SDR) and GNSS (from a
+MAX-M8Q or GT-U7 module over the Pi's UART, or from gpsd), and streams both to the **Solo** iPad app over TCP.
+
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for how Dolo is put together (data flow, hub, GNSS receiver classes).
 
 ## Compartmentalization
 
-- `dolo/` is self-contained; it never includes or reads anything from `SoloDolo/` (the iOS app).
+- `dolo/` is self-contained; it never includes or reads anything from `solo/` (the iOS app).
 - The only shared artifact is the wire contract `../proto/solodolo/v1/solodolo.proto`
   (see `../docs/architecture.md` §4). CMake generates the C++ from it at build time; nothing generated is committed.
 - Solo likewise only needs the `.proto`, never anything under `dolo/`.
@@ -24,8 +26,14 @@ antenna → SDR → dump1090-mutability ──SBS :30003──▶ Dolo ──pro
 |---|---|
 | `src/sbs.*` | dump1090 SBS line parser |
 | `src/aircraft.*` | merges per-ICAO state, prunes stale aircraft, builds `TrafficSnapshot` |
-| `src/gnss.*` | gpsd TPV/SKY or NMEA (RMC, GGA, GSA, GSV) → `GnssFix` (optional) |
-| `src/serial.*` | serial port line reader (reopens the device after errors) |
+| `src/gnss/receiver.*` | `GnssReceiver`: the interface Dolo uses for any GNSS hardware or source |
+| `src/gnss/nmea.*`, `ubx.*` | NMEA 0183 and u-blox UBX protocol codecs; know nothing about hardware |
+| `src/gnss/stream.*` | splits the UART byte stream into NMEA sentences and UBX frames |
+| `src/gnss/uart_receiver.*` | `UartGnssReceiver`: serial port + the sentence-to-state mapping shared by UART modules |
+| `src/gnss/max_m8q.*`, `gt_u7.*` | one class per module (`MaxM8qReceiver`: UBX with NMEA fallback, `GtU7Receiver`: NMEA) |
+| `src/gnss/gpsd.*` | `GpsdReceiver`: gpsd's TPV/SKY JSON stream |
+| `src/gnss/state.*`, `factory.*` | `GnssState` → `GnssFix`; config name → receiver class |
+| `src/serial.*` | serial port, bytes in and out (reopens the device after errors) |
 | `src/hub.*` | :5555 protobuf (handshake, ping/pong, replay of latest state) and :5556 NDJSON debug mirror |
 | `src/net.*`, `src/event_loop.*` | non-blocking sockets and a single-threaded epoll loop |
 | `src/config.*`, `config/dolo.yaml` | YAML configuration (unknown keys are rejected) |
@@ -58,10 +66,22 @@ Configuration lives in YAML; see `config/dolo.yaml` for every option. Without `-
 ADS-B source: `dump1090-mutability` (config in `/etc/default/dump1090-mutability`, SBS on :30003 bound to
 localhost). `sudo systemctl enable --now dump1090-mutability` starts it now and on every boot.
 
-GNSS is off until `gnss.enabled: true`. With `gnss.source: serial`, Dolo reads NMEA straight from `gnss.device`
-(e.g. a GT-U7 on the Pi 5 GPIO UART: `dtparam=uart0=on` in `config.txt`, no serial console, `/dev/ttyAMA0`, 9600 baud);
-with `gpsd` it follows gpsd's JSON stream. While GNSS is off or has no fix, `ownship_fallback` (the receiver location)
-is used so range and bearing are still populated.
+GNSS is off until `gnss.enabled: true`. `gnss.receiver` picks the hardware: `max-m8q` (u-blox MAX-M8Q HAT, the
+default), `gt-u7`, or `gpsd` (follows a running gpsd). The two module receivers read straight from `gnss.device`
+(Pi 5 GPIO UART: `dtparam=uart0=on` in `config.txt`, no serial console, `/dev/ttyAMA0`, 9600 baud unless `gnss.baud`
+says otherwise). The MAX-M8Q receiver switches the module to UBX messages at startup, which needs the module's RX
+wired to the Pi's TX (GPIO14, pin 8); without that wire it simply stays on NMEA. See `ARCHITECTURE.md`. While GNSS is off or has no fix, `ownship_fallback` (the receiver location) is used so range and
+bearing are still populated.
+
+### Adding a GNSS receiver
+
+Each hardware model is its own class behind `GnssReceiver`, so swapping parts never touches `main.cpp`:
+
+1. Subclass `UartGnssReceiver` (UART modules that speak NMEA, optionally with a vendor binary protocol) and implement `onGsa`/`onGsv` for how that module
+   reports fix type and satellites in view; or subclass `GnssReceiver` directly for a different protocol.
+2. Add the class to `CMakeLists.txt` and one line each to `isKnownGnssReceiver` and `makeGnssReceiver`
+   in `src/gnss/factory.cpp`.
+3. Add a test next to `testMaxM8q` that feeds real captured sentences through `feed()`.
 
 ## Install as a service
 
@@ -84,4 +104,4 @@ Services: `dump1090-mutability` (decoder, SBS on localhost:30003), `dolo` (start
 ## Status
 
 Verified end-to-end on this Pi: NooElec NESDR SMArt → dump1090-mutability → Dolo, ~47 aircraft with range/bearing
-on :5556. The gpsd path is tested against canned messages only; the NMEA path against canned sentences and a live GT-U7 (3D fix, 9 satellites). Not yet tested against the Solo app.
+on :5556. The gpsd path is tested against canned messages only; the NMEA and UBX paths against data captured from a live GT-U7 and MAX-M8Q (3D fix on both). Not yet tested against the Solo app.

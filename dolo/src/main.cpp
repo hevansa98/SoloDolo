@@ -7,18 +7,15 @@
 #include <memory>
 #include <string>
 
-#include <nlohmann/json.hpp>
-
 #include "aircraft.hpp"
 #include "clock.hpp"
 #include "config.hpp"
 #include "event_loop.hpp"
-#include "gnss.hpp"
+#include "gnss/factory.hpp"
 #include "hub.hpp"
 #include "log.hpp"
 #include "net.hpp"
 #include "sbs.hpp"
-#include "serial.hpp"
 
 namespace {
 
@@ -64,7 +61,6 @@ int main(int argc, char** argv) {
         dolo::EventLoop::installSignalHandlers();
         dolo::EventLoop loop;
         dolo::AircraftStore store(cfg.pruneAfterS);
-        dolo::GnssState gnss;
 
         using solodolo::v1::Capability;
         std::vector<Capability> caps = {solodolo::v1::CAPABILITY_TRAFFIC};
@@ -79,35 +75,22 @@ int main(int argc, char** argv) {
         };
         sbs.start();
 
-        auto publishGnss = [&] {
-            auto env = dolo::makeEnvelope();
-            *env.mutable_gnss() = gnss.toProto();
-            hub.broadcast(env);
-        };
-
-        std::unique_ptr<dolo::TcpClient> gpsd;
-        std::unique_ptr<dolo::SerialLineReader> nmea;
-        if (cfg.gnssEnabled && cfg.gnssSource == "serial") {
-            nmea = std::make_unique<dolo::SerialLineReader>(loop, "GNSS", cfg.gnssDevice, cfg.gnssBaud);
-            nmea->onLine = [&](std::string_view line) {
-                if (gnss.applyNmea(line)) publishGnss();
+        std::unique_ptr<dolo::GnssReceiver> gnss;
+        if (cfg.gnssEnabled) {
+            gnss = dolo::makeGnssReceiver(cfg, loop);
+            gnss->onFix = [&](const dolo::GnssState& state) {
+                auto env = dolo::makeEnvelope();
+                *env.mutable_gnss() = state.toProto();
+                hub.broadcast(env);
             };
-            nmea->start();
-        } else if (cfg.gnssEnabled) {
-            gpsd = std::make_unique<dolo::TcpClient>(loop, "gpsd", cfg.gpsdHost, cfg.gpsdPort);
-            dolo::TcpClient* g = gpsd.get();
-            g->onConnect = [g] { g->send("?WATCH={\"enable\":true,\"json\":true}\n"); };
-            g->onLine = [&](std::string_view line) {
-                const auto j = nlohmann::json::parse(line, nullptr, /*allow_exceptions=*/false);
-                if (!j.is_discarded() && gnss.apply(j)) publishGnss();
-            };
-            g->start();
+            LOG_INFO("GNSS receiver: %s", gnss->model().c_str());
+            gnss->start();
         } else {
             LOG_INFO("GNSS disabled; range/bearing %s", cfg.fallbackLat ? "use ownship_fallback" : "unavailable (set ownship_fallback)");
         }
 
         loop.every(1.0 / cfg.trafficHz, [&] {
-            std::optional<dolo::Ownship> own = gnss.ownship();
+            std::optional<dolo::Ownship> own = gnss ? gnss->state().ownship() : std::nullopt;
             if (!own && cfg.fallbackLat) own = dolo::Ownship{*cfg.fallbackLat, *cfg.fallbackLon, std::nullopt};
             auto env = dolo::makeEnvelope();
             *env.mutable_traffic() = store.snapshot(own, dolo::monotonicS());

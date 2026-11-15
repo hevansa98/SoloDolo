@@ -1,4 +1,4 @@
-// Line-oriented serial port reader (e.g. a GNSS module's NMEA output) that reopens the device after errors.
+// Non-blocking serial port (raw bytes in and out) that reopens the device after errors.
 #pragma once
 
 #include <functional>
@@ -9,19 +9,24 @@
 
 namespace dolo {
 
-/// Baud rates SerialLineReader supports.
+/// Baud rates SerialPort supports.
 bool isSupportedBaud(int baud);
 
-class SerialLineReader {
+class SerialPort {
 public:
-    SerialLineReader(EventLoop& loop, std::string name, std::string device, int baud, double retryS = 5.0);
-    ~SerialLineReader();
-    SerialLineReader(const SerialLineReader&) = delete;
-    SerialLineReader& operator=(const SerialLineReader&) = delete;
+    SerialPort(EventLoop& loop, std::string name, std::string device, int baud, double retryS = 5.0);
+    ~SerialPort();
+    SerialPort(const SerialPort&) = delete;
+    SerialPort& operator=(const SerialPort&) = delete;
 
-    std::function<void(std::string_view line)> onLine;
+    std::function<void()> onOpen;  // every time the device is (re)opened
+    std::function<void(std::string_view bytes)> onData;
 
     void start() { openNow(); }
+
+    /// Writes all of `bytes`. Returns false if the port is not open or the kernel buffer is full; the caller's
+    /// messages are tiny (tens of bytes), so a full buffer means something is wrong and the data is dropped.
+    bool write(std::string_view bytes);
 
 private:
     void openNow();
@@ -35,7 +40,6 @@ private:
     int fd_ = -1;
     bool wasReachable_ = true;  // logs "unavailable" once per outage instead of every retry
     EventLoop::TimerId retryTimer_ = 0;
-    std::string in_;
 };
 
 }  // namespace dolo

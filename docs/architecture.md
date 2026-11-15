@@ -2,6 +2,7 @@
 
 **Dolo**, on a Raspberry Pi, decodes ADS-B traffic and reads GNSS. It streams both over TCP to **Solo**, an iPad dashboard.
 The two halves share exactly one artifact: the wire contract `proto/solodolo/v1/solodolo.proto`.
+Dolo's internals (components, GNSS receiver classes, UBX handling) are in [`dolo/ARCHITECTURE.md`](../dolo/ARCHITECTURE.md).
 
 Sections marked *(planned)* describe intended behavior that isn't built yet. Everything else matches the code as of this revision.
 
@@ -17,7 +18,7 @@ flowchart LR
     subgraph PI["Raspberry Pi — Dolo"]
         direction TB
         SDR["NooElec RTL-SDR<br/>(USB)"]
-        GNSSHW["GNSS module<br/>e.g. GT-U7 on UART"]
+        GNSSHW["GNSS module<br/>MAX-M8Q (or GT-U7) on UART"]
 
         DUMP["dump1090-mutability<br/>SBS on localhost:30003"]
         GPSD["gpsd :2947<br/>(alternative source)"]
@@ -27,7 +28,7 @@ flowchart LR
 
         SDR --> DUMP
         DUMP -->|SBS lines| DOLO
-        GNSSHW -->|NMEA, /dev/ttyAMA0| DOLO
+        GNSSHW -->|"UBX + NMEA, /dev/ttyAMA0"| DOLO
         GNSSHW -.->|or| GPSD
         GPSD -.->|TPV / SKY JSON| DOLO
     end
@@ -62,7 +63,7 @@ flowchart LR
 | Path | What it is |
 |---|---|
 | `proto/solodolo/v1/solodolo.proto` | Wire contract. The single source of truth for both halves. |
-| `dolo/` | Pi bridge (C++20, CMake). Self-contained: it never reads anything under `solo/`. See `dolo/README.md`. |
+| `dolo/` | Pi bridge (C++20, CMake). Self-contained: it never reads anything under `solo/`. See `dolo/README.md` and `dolo/ARCHITECTURE.md`. |
 | `dolo/deploy/` | `install.sh`, `start.sh`, systemd unit, avahi service record |
 | `solo/` | iPad app sources (Xcode target `SoloDolo`) |
 | `solo/Generated/solodolo.pb.swift` | Swift code generated from the `.proto`. Don't edit by hand. |
@@ -176,7 +177,7 @@ The `.proto` file is authoritative; this table is a summary.
 |---|---|---|---|
 | `ClientHello` (10) | Solo → Dolo | First frame after connecting | `protocol_version` (1), `app_version` e.g. "1.0 (1)" |
 | `ServerHello` (11) | Dolo → Solo | Reply to `ClientHello` | `protocol_version`, `bridge_version`, `capabilities` (GNSS, TRAFFIC), `pps_locked` |
-| `GnssFix` (20) | Dolo → Solo | Each GNSS update, plus a replay after the handshake | `fix_mode`, lat/lon (2D/3D fix only), `satellites_used/visible`, optional `hdop`, altitude, speed, track |
+| `GnssFix` (20) | Dolo → Solo | Each GNSS update, plus a replay after the handshake | `fix_mode`, lat/lon (2D/3D fix only), `satellites_used/visible`, optional `hdop`/`vdop`, altitude, speed, track, climb, horizontal error (the last two only over UBX or gpsd) |
 | `TrafficSnapshot` (21) | Dolo → Solo | Every 1/`traffic_hz` s | `aircraft[]` (full picture, not deltas), `messages_total` |
 | `Ping` (30) / `Pong` (31) | Solo → Dolo / back | Every 5 s | `seq` echoed back |
 
@@ -239,7 +240,7 @@ Each half computes range and bearing independently, using the same rule:
 | Traffic updates | Full snapshot at 1 Hz | Per-aircraft deltas (only if the link gets slower) |
 | Debug visibility | NDJSON copy of the stream on :5556 | Debug-build-only switch in Solo |
 | ADS-B source | `dump1090-mutability` SBS on localhost:30003 | dump1090-fa; polling `aircraft.json` |
-| GNSS source | NMEA straight from the serial port (`gnss.source: serial`), or gpsd | gpsd only |
+| GNSS source | Straight from the UART, one `GnssReceiver` class per module (`gnss.receiver: max-m8q` uses UBX with an NMEA fallback; `gt-u7` uses NMEA), or gpsd (`gnss.receiver: gpsd`) | gpsd only |
 | Solo addressing | Typed host/port (defaults 192.168.50.1:5555) | Bonjour discovery *(planned)*; DHCP on the Pi's eth0 *(planned)* |
 | iPad network | USB-C Ethernet adapter (ideally with PD passthrough), or a shared LAN | Lightning adapter on older iPads |
 | Time source | System clock; PPS via chrony *(planned)* | NTP only |
