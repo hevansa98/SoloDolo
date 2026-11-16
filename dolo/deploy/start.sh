@@ -5,6 +5,7 @@
 #   ./deploy/start.sh            start (default)
 #   ./deploy/start.sh restart    restart both, e.g. after editing /etc/dolo/dolo.yaml
 #   ./deploy/start.sh stop       stop dolo, then dump1090-mutability
+#   ./deploy/start.sh status     show service state and the latest GNSS report; changes nothing
 #
 # Run as your normal user; sudo is used where needed.
 set -euo pipefail
@@ -29,11 +30,32 @@ wait_for_port() {  # wait_for_port PORT NAME
     return 1
 }
 
+print_status() {
+    step "Status"
+    for svc in dump1090-mutability dolo avahi-daemon; do
+        printf '%-24s %s\n' "$svc" "$(systemctl is-active "$svc" || true)"
+    done
+    if command -v nc >/dev/null && listening 5556; then
+        local gnss
+        gnss="$(timeout 3 nc localhost 5556 2>/dev/null | grep -m1 '"gnss"' || true)"
+        printf '%-24s %s\n' "gnss" "${gnss:-no GNSS report}"
+        if [[ -z "$gnss" ]] && grep -qs '^  enabled: true' /etc/dolo/dolo.yaml; then
+            echo "  GNSS is enabled but silent. Check: the module is wired to GPIO14/15, the UART is enabled"
+            echo "  (ls /dev/ttyAMA0; reboot after install.sh changes it) and: journalctl -u dolo -n 20"
+        fi
+    fi
+}
+
 action="${1:-start}"
 case "$action" in
-    start | restart | stop) ;;
-    *) echo "usage: $0 [start|restart|stop]" >&2; exit 2 ;;
+    start | restart | stop | status) ;;
+    *) echo "usage: $0 [start|restart|stop|status]" >&2; exit 2 ;;
 esac
+
+if [[ "$action" == "status" ]]; then
+    print_status
+    exit 0
+fi
 
 if [[ "$action" == "stop" ]]; then
     step "Stopping"
@@ -55,13 +77,6 @@ step "Starting dolo"
 sudo systemctl "$action" dolo
 wait_for_port 5555 "dolo" dolo
 
-step "Status"
-for svc in dump1090-mutability dolo avahi-daemon; do
-    printf '%-24s %s\n' "$svc" "$(systemctl is-active "$svc" || true)"
-done
-if command -v nc >/dev/null && listening 5556; then
-    gnss="$(timeout 3 nc localhost 5556 2>/dev/null | grep -m1 '"gnss"' || true)"
-    printf '%-24s %s\n' "gnss" "${gnss:-no GNSS report yet}"
-fi
+print_status
 echo
 echo "Solo connects to :5555. Logs: journalctl -u dolo -f"

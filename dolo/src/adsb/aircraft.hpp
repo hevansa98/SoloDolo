@@ -4,15 +4,11 @@
 #include <map>
 #include <optional>
 
-#include "sbs.hpp"
+#include "adsb/sbs.hpp"
+#include "core/ownship.hpp"
 #include "solodolo.pb.h"
 
 namespace dolo {
-
-struct Ownship {
-    double lat, lon;
-    std::optional<double> altMslFt;
-};
 
 struct Track {
     TrackFields f;

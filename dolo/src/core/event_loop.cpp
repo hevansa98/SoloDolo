@@ -1,4 +1,4 @@
-#include "event_loop.hpp"
+#include "core/event_loop.hpp"
 
 #include <sys/epoll.h>
 #include <unistd.h>
@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <system_error>
 
-#include "clock.hpp"
+#include "core/clock.hpp"
 
 namespace dolo {
 namespace {

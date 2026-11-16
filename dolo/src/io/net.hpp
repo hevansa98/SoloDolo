@@ -5,7 +5,7 @@
 #include <string>
 #include <string_view>
 
-#include "event_loop.hpp"
+#include "core/event_loop.hpp"
 
 namespace dolo {
 

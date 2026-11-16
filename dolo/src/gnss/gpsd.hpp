@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include "gnss/receiver.hpp"
-#include "net.hpp"
+#include "io/net.hpp"
 
 namespace dolo
 {

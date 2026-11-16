@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "event_loop.hpp"
+#include "core/event_loop.hpp"
 #include "solodolo.pb.h"
 
 namespace dolo {

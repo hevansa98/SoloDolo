@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include "app/config.hpp"
 
 #include <fstream>
 #include <set>
@@ -8,7 +8,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include "gnss/factory.hpp"
-#include "serial.hpp"
+#include "io/serial.hpp"
 
 namespace dolo {
 namespace {
@@ -78,15 +78,15 @@ Config Config::fromYaml(const std::string& text) {
 
     const auto gnss = section(root, "gnss", {"enabled", "receiver", "device", "baud", "host", "port"});
     read(gnss, "enabled", c.gnssEnabled);
-    read(gnss, "receiver", c.gnssReceiver);
-    read(gnss, "device", c.gnssDevice);
+    read(gnss, "receiver", c.gnss.receiver);
+    read(gnss, "device", c.gnss.device);
     if (gnss && gnss["baud"]) {
         int baud = 0;
         read(gnss, "baud", baud);
-        c.gnssBaud = baud;
+        c.gnss.baud = baud;
     }
-    read(gnss, "host", c.gpsdHost);
-    read(gnss, "port", c.gpsdPort);
+    read(gnss, "host", c.gnss.gpsdHost);
+    read(gnss, "port", c.gnss.gpsdPort);
 
     read(root, "traffic_hz", c.trafficHz);
     read(root, "log_level", c.logLevel);
@@ -106,10 +106,10 @@ Config Config::fromYaml(const std::string& text) {
     if (c.debugPort) requirePort(*c.debugPort, "server.debug_port");
     if (c.debugPort && *c.debugPort == c.port) fail("server.debug_port must differ from server.port");
     requirePort(c.sbsPort, "adsb.port");
-    requirePort(c.gpsdPort, "gnss.port");
-    if (!isKnownGnssReceiver(c.gnssReceiver)) fail("gnss.receiver must be gt-u7, max-m8q or gpsd");
-    if (c.gnssDevice.empty()) fail("gnss.device must not be empty");
-    if (c.gnssBaud && !isSupportedBaud(*c.gnssBaud)) fail("gnss.baud must be 4800, 9600, 19200, 38400, 57600 or 115200");
+    requirePort(c.gnss.gpsdPort, "gnss.port");
+    if (!isKnownGnssReceiver(c.gnss.receiver)) fail("gnss.receiver must be gt-u7, max-m8q or gpsd");
+    if (c.gnss.device.empty()) fail("gnss.device must not be empty");
+    if (c.gnss.baud && !isSupportedBaud(*c.gnss.baud)) fail("gnss.baud must be 4800, 9600, 19200, 38400, 57600 or 115200");
     if (c.trafficHz <= 0 || c.trafficHz > 20) fail("traffic_hz must be in (0, 20]");
     if (c.pruneAfterS <= 0) fail("adsb.prune_after_s must be positive");
     if (c.logLevel != "debug" && c.logLevel != "info" && c.logLevel != "warning" && c.logLevel != "error")

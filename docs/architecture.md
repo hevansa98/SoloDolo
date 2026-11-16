@@ -124,7 +124,8 @@ sequenceDiagram
     Note over I: No pong for 10 s, a bad frame, or a closed socket<br/>→ status "failed"; GPS and traffic are cleared
 ```
 
-Dolo keeps at most 8 queued frames per client. A slow client loses its oldest unsent frames rather than stalling the server.
+- Dolo keeps at most 8 queued frames per client. A slow client loses its oldest unsent frames rather than stalling the server.
+- Timing inside Dolo (startup, GNSS epochs, the UBX fallback) is in [`dolo/ARCHITECTURE.md`](../dolo/ARCHITECTURE.md#timing).
 
 ## 4. Solo connection states
 
@@ -249,5 +250,9 @@ Port 5556 sends the same `Envelope`s in protobuf's JSON mapping. Set `server.deb
 ## 9. Known gaps
 
 - **Solo:** no automatic reconnect or backoff, no Stale state, no Bonjour discovery, no Disconnect button (leaving the dashboard keeps the link open), and no unit tests.
-- **Dolo:** PPS lock is never reported. The gpsd path is tested only against canned messages.
+- **Dolo:**
+  - PPS lock is never reported.
+  - The gpsd path is tested only against canned messages.
+  - If the GNSS source stops talking, the last fix is not marked stale.
+  - After a restart, the first GNSS reports can be a few seconds old while the module's output queue drains.
 - **End-to-end:** Solo has been tested against a local fake Dolo, not yet against a real Pi.

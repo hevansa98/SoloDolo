@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <optional>
 
-#include "aircraft.hpp"
+#include "core/ownship.hpp"
 #include "solodolo.pb.h"
 
 namespace dolo

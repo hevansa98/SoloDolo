@@ -1,4 +1,4 @@
-#include "hub.hpp"
+#include "server/hub.hpp"
 
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -11,10 +11,10 @@
 
 #include <google/protobuf/util/json_util.h>
 
-#include "clock.hpp"
-#include "framing.hpp"
-#include "log.hpp"
-#include "net.hpp"
+#include "core/clock.hpp"
+#include "server/framing.hpp"
+#include "core/log.hpp"
+#include "io/net.hpp"
 
 namespace dolo {
 namespace pb = solodolo::v1;

@@ -1,4 +1,4 @@
-#include "net.hpp"
+#include "io/net.hpp"
 
 #include <fcntl.h>
 #include <netdb.h>
@@ -13,7 +13,7 @@
 #include <memory>
 #include <stdexcept>
 
-#include "log.hpp"
+#include "core/log.hpp"
 
 namespace dolo {
 namespace {

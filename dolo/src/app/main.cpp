@@ -7,15 +7,15 @@
 #include <memory>
 #include <string>
 
-#include "aircraft.hpp"
-#include "clock.hpp"
-#include "config.hpp"
-#include "event_loop.hpp"
+#include "adsb/aircraft.hpp"
+#include "core/clock.hpp"
+#include "app/config.hpp"
+#include "core/event_loop.hpp"
 #include "gnss/factory.hpp"
-#include "hub.hpp"
-#include "log.hpp"
-#include "net.hpp"
-#include "sbs.hpp"
+#include "server/hub.hpp"
+#include "core/log.hpp"
+#include "io/net.hpp"
+#include "adsb/sbs.hpp"
 
 namespace {
 
@@ -24,6 +24,11 @@ constexpr const char* kDefaultConfigPath = "/etc/dolo/dolo.yaml";
 void usage() {
     std::puts("usage: dolo [-c|--config FILE] [--version]\n"
               "  Without --config, /etc/dolo/dolo.yaml is used if present, otherwise built-in defaults.");
+}
+
+dolo::Config loadConfig(const std::string& path) {
+    if (path.empty()) return {};  // built-in defaults
+    return dolo::Config::fromFile(path);
 }
 
 dolo::LogLevel parseLevel(const std::string& s) {
@@ -53,7 +58,7 @@ int main(int argc, char** argv) {
     try {
         struct stat st;
         if (configPath.empty() && stat(kDefaultConfigPath, &st) == 0) configPath = kDefaultConfigPath;
-        const dolo::Config cfg = configPath.empty() ? dolo::Config{} : dolo::Config::fromFile(configPath);
+        const dolo::Config cfg = loadConfig(configPath);
         dolo::logThreshold() = parseLevel(cfg.logLevel);
         if (configPath.empty()) LOG_INFO("no config file; using defaults");
         else LOG_INFO("config: %s", configPath.c_str());
@@ -77,7 +82,7 @@ int main(int argc, char** argv) {
 
         std::unique_ptr<dolo::GnssReceiver> gnss;
         if (cfg.gnssEnabled) {
-            gnss = dolo::makeGnssReceiver(cfg, loop);
+            gnss = dolo::makeGnssReceiver(cfg.gnss, loop);
             gnss->onFix = [&](const dolo::GnssState& state) {
                 auto env = dolo::makeEnvelope();
                 *env.mutable_gnss() = state.toProto();

@@ -7,11 +7,11 @@ Solo shows a live dashboard: a traffic map, GPS health, and the five closest air
 ```
 1090 MHz antenna → RTL-SDR → dump1090 ─┐
                                        ├─▶ Dolo (Pi) ══ TCP :5555, protobuf ══▶ Solo (iPad)
-GNSS antenna → GNSS module (NMEA) ─────┘        └─ :5556 JSON copy for debugging
+GNSS antenna → GNSS module (UBX/NMEA) ─┘        └─ :5556 JSON copy for debugging
 ```
 
 For the design, wire protocol and state machines, see [`docs/architecture.md`](docs/architecture.md).
-For Dolo's internals and configuration, see [`dolo/README.md`](dolo/README.md).
+For setting up and running Dolo, see [`dolo/README.md`](dolo/README.md). For its internals, see [`dolo/ARCHITECTURE.md`](dolo/ARCHITECTURE.md).
 
 ## Repository layout
 
@@ -29,7 +29,7 @@ For Dolo's internals and configuration, see [`dolo/README.md`](dolo/README.md).
 **Dolo:**
 - A Raspberry Pi (tested on a Pi 5) running Raspberry Pi OS / Debian with `apt`.
 - An RTL-SDR dongle (tested with a NooElec NESDR SMArt) and a 1090 MHz antenna.
-- Optional: a serial GNSS module (tested with a GT-U7 on the GPIO UART), or anything gpsd supports.
+- Optional: a GNSS module on the GPIO UART (a u-blox MAX-M8Q HAT, or a GT-U7), or anything gpsd supports.
 
 **Solo:**
 - A Mac with Xcode 26 or later and an Apple Developer account for signing.
@@ -55,11 +55,12 @@ The installer is safe to re-run. It:
 Options:
 
 ```bash
-GNSS=serial ./dolo/deploy/install.sh             # fresh install that reads NMEA from the GNSS module's serial port
+GNSS=max-m8q ./dolo/deploy/install.sh              # fresh install with GNSS on (max-m8q | gt-u7 | gpsd)
 LAT=33.0462 LON=-96.9942 ./dolo/deploy/install.sh  # set the receiver position used when there's no GNSS fix
 ```
 
-- **A serial GNSS module on a Pi 5** also needs `dtparam=uart0=on` in `/boot/firmware/config.txt`, and the serial console disabled.
+- **`GNSS=max-m8q` or `gt-u7` on a Pi 5** also enables the GPIO UART and frees it from the serial console (originals are saved as `*.dolo.bak`). Reboot when the installer says so.
+- **`GNSS=...` only applies to a new `/etc/dolo/dolo.yaml`.** With an existing one, edit its `gnss:` section.
 - **After editing `/etc/dolo/dolo.yaml`**, restart Dolo (see below). Every option is documented in [`dolo/config/dolo.yaml`](dolo/config/dolo.yaml).
 - **Receiver position:** `LAT`/`LON` update dump1090's config. On a fresh install they're also copied into `ownship_fallback` in `/etc/dolo/dolo.yaml`. On an existing install, edit `ownship_fallback` there yourself.
 
@@ -68,6 +69,7 @@ LAT=33.0462 LON=-96.9942 ./dolo/deploy/install.sh  # set the receiver position u
 ```bash
 ./dolo/deploy/start.sh           # start dump1090, wait for it, start dolo, print status
 ./dolo/deploy/start.sh restart   # restart both, e.g. after editing /etc/dolo/dolo.yaml
+./dolo/deploy/start.sh status    # what is running, and the latest GNSS report (changes nothing)
 ```
 
 `start.sh` runs `install.sh` first if Dolo isn't installed yet. To check that Dolo is running:
@@ -90,13 +92,14 @@ The services are still enabled, so they come back on the next boot. To turn that
 sudo systemctl disable dolo dump1090-mutability
 ```
 
-To remove Dolo entirely (dump1090 and `/etc/dolo` are kept):
+To remove Dolo entirely:
 
 ```bash
-./dolo/deploy/install.sh --uninstall
+./dolo/deploy/install.sh --uninstall   # keeps dump1090 and /etc/dolo
+./dolo/deploy/install.sh --purge       # also deletes /etc/dolo
 ```
 
-To build and run Dolo by hand without systemd, e.g. while developing, see [`dolo/README.md`](dolo/README.md#build-and-run).
+To build and run Dolo by hand without systemd, e.g. while developing, see [`dolo/README.md`](dolo/README.md#build-and-run-by-hand).
 
 ## Solo (iPad)
 

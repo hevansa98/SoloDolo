@@ -4,6 +4,8 @@
 #include <optional>
 #include <string>
 
+#include "gnss/factory.hpp"
+
 namespace dolo {
 
 struct Config {
@@ -19,11 +21,7 @@ struct Config {
 
     // gnss: opt-in until a GNSS receiver is fitted
     bool gnssEnabled = false;
-    std::string gnssReceiver = "max-m8q";  // "gt-u7", "max-m8q" or "gpsd"; see gnss/factory.hpp
-    std::string gnssDevice = "/dev/ttyAMA0";  // serial receivers
-    std::optional<int> gnssBaud;              // serial receivers; unset uses the receiver's own default
-    std::string gpsdHost = "127.0.0.1";
-    int gpsdPort = 2947;
+    GnssSettings gnss;  // which receiver and how to reach it; see gnss/factory.hpp
 
     double trafficHz = 1.0;
 

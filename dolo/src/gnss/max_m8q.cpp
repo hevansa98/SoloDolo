@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #include "gnss/units.hpp"
-#include "log.hpp"
+#include "core/log.hpp"
 
 namespace dolo
 {

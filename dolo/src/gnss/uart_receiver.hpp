@@ -6,12 +6,12 @@
 #include <string>
 #include <string_view>
 
-#include "event_loop.hpp"
+#include "core/event_loop.hpp"
 #include "gnss/nmea.hpp"
 #include "gnss/receiver.hpp"
 #include "gnss/stream.hpp"
 #include "gnss/ubx.hpp"
-#include "serial.hpp"
+#include "io/serial.hpp"
 
 namespace dolo
 {

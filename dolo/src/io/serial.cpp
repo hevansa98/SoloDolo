@@ -1,4 +1,4 @@
-#include "serial.hpp"
+#include "io/serial.hpp"
 
 #include <fcntl.h>
 #include <sys/epoll.h>
@@ -8,7 +8,7 @@
 #include <cerrno>
 #include <cstring>
 
-#include "log.hpp"
+#include "core/log.hpp"
 
 namespace dolo {
 namespace {
