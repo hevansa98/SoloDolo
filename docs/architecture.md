@@ -121,7 +121,7 @@ sequenceDiagram
         B-->>I: Envelope{Pong{seq}}
     end
 
-    Note over I: No pong for 10 s, a bad frame, or a closed socket<br/>→ status "failed"; GPS and traffic are cleared
+    Note over I: No pong for 10 s, a bad frame, or a closed socket<br/>sets status to failed, and clears GPS and traffic
 ```
 
 - Dolo keeps at most 8 queued frames per client. A slow client loses its oldest unsent frames rather than stalling the server.
