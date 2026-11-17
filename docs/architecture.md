@@ -193,6 +193,13 @@ It also has `on_ground`, freshness fields (`seen_s`, `seen_pos_s`, `rssi_dbfs`),
 - Bump `protocol_version` (Dolo `kProtocolVersion`, Solo `BridgeConnection.protocolVersion`) only for breaking changes.
 - Generated code is never hand-edited. Dolo regenerates on every build; Solo runs `scripts/generate-proto.sh`.
 
+To change the protocol: edit `proto/solodolo/v1/solodolo.proto` following the rules above, then regenerate Solo's Swift code (Dolo regenerates its C++ automatically on the next build):
+
+```bash
+brew install swift-protobuf        # once; provides protoc and protoc-gen-swift
+./scripts/generate-proto.sh        # regenerates solo/Generated/solodolo.pb.swift
+```
+
 ### Debugging
 
 ```bash
